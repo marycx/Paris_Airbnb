@@ -1,8 +1,12 @@
 ---
 title: "paris_airbnb"
 author: "Mary Cheng"
-format: html
-editor: visual
+date: today
+date-format: long
+thanks: "Code and data are avaliable at:https://github.com/marycx/Australian_PM_lifespan.git"
+purpose: "Analyze Airbnb listings in Paris, France, as at 12 December 2023. Downlaod the dataset from Inside Airbnb (Cox 2021) and analyze it using statistical programming language R."
+format: pdf
+bibliography: ref.bib
 ---
 
 ```{r}
