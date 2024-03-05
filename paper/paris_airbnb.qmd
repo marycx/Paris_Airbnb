@@ -1,15 +1,18 @@
 ---
-title: "paris_airbnb"
+title: "Airbnb listings in Paris, France"
 author: "Mary Cheng"
 date: today
 date-format: long
-thanks: "Code and data are avaliable at:https://github.com/marycx/Australian_PM_lifespan.git"
-purpose: "Analyze Airbnb listings in Paris, France, as at 12 December 2023. Downlaod the dataset from Inside Airbnb (Cox 2021) and analyze it using statistical programming language R."
+thanks: "Code and data are avaliable at:https://github.com/marycx/Paris_Airbnb.git"
+purpose: "Analyze Airbnb listings in Paris, France, as at 12 December 2023. Download the dataset from Inside Airbnb (Cox 2021) and analyze it using statistical programming language R."
 format: pdf
 bibliography: ref.bib
 ---
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
 library(arrow)
 library(janitor)
 library(knitr)
@@ -18,7 +21,16 @@ library(naniar)
 library(tidyverse)
 ```
 
+## Introduction
+
+This report uses statistically programming language R [@citeR] to analyze the data on Paris Airbnb situations. The report will look at the distribution and properties of individual variables first, then look at the relationships between the variables to see if there is any correlation.
+
+The report is going to get the dataset from Inside Airbnb [@citeair], then explore the data features and plot the graphs to illustrate the dataset.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
 # get the data from InsideAirbnb website
 url <-
   paste0(
@@ -32,11 +44,12 @@ airbnb_data <-
   )
 
 write_csv(airbnb_data, "airbnb_data.csv")
-
-airbnb_data
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
 airbnb_data_selected <-
   airbnb_data |>
   select(
@@ -65,12 +78,22 @@ rm(airbnb_data)
 
 ## Distribution and properties of individual variables
 
+After cleaning the dataset, the distribution of prices is looked at first. I plotted @fig-price-1 and @fig-price-2 to illustrate the distribution. Plotting on regular scale shows multiple outliers, such as the ones with very high prices. So a log scale is used to plot the distribution again to make it more clear. We can see that prices are more on the lower end, number of properties decreases overall as prices increase.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
+#| warning: FALSE
 airbnb_data_selected$price |>
   head()
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
+#| warning: FALSE
 airbnb_data_selected$price |>
   str_split("") |>
   unlist() |>
@@ -78,12 +101,20 @@ airbnb_data_selected$price |>
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
+#| warning: FALSE
 airbnb_data_selected |>
   select(price) |>
   filter(str_detect(price, ","))
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
+#| warning: FALSE
 airbnb_data_selected <-
   airbnb_data_selected |>
   mutate(
@@ -93,6 +124,11 @@ airbnb_data_selected <-
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
+#| label: fig-price
+#| fig-cap: Distribution of prices
 airbnb_data_selected |>
   ggplot(aes(x = price)) +
   geom_histogram(binwidth = 10) +
@@ -114,7 +150,14 @@ airbnb_data_selected |>
   scale_y_log10()
 ```
 
+After focusing on prices that are less than \$1000, the distribution is more clear. @fig-price_1000 shows that most properties are less than \$250, so I decide to analyze more in the range of \$100 to \$250. @fig-price_250 shows a overall gradual decrease in number of properties as the price increases. Also, it can be clearly seen that some prices have very high number of properties. It might be due to the fact that landlords tend to choose easy number because those prices are round numbers, such as \$100, \$120, or \$150.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
+#| label: fig-price_1000
+#| fig-cap: Distribution of prices less than $1000
 airbnb_data_selected |>
   filter(price < 1000) |>
   ggplot(aes(x = price)) +
@@ -125,6 +168,14 @@ airbnb_data_selected |>
     y = "Number of properties"
   )
 
+```
+
+```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
+#| label: fig-price_250
+#| fig-cap: Distribution of prices in range of $250 to $500
 airbnb_data_selected |>
   filter(price > 100) |>
   filter(price < 250) |>
@@ -137,18 +188,33 @@ airbnb_data_selected |>
   )
 ```
 
+@fig-review shows the distribution of guest ratings for each properties that they stayed at after cleaning the dataset. It can be seen that majority of the ratings are 5-star; 1-star and 2-star ratings are very rare.
+
+I noticed that there are a lot of missing values in this dataset. Using geom_miss_point() from naniar, I plotted @fig-missing to include missing values by host response time.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
+#| results: 'hide'
 airbnb_data_less_1000 <-
   airbnb_data_selected |>
   filter(price < 1000)
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| warning: FALSE
+#| results: 'hide'
 airbnb_data_less_1000 |>
   filter(is.na(host_is_superhost))
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_no_superhost_nas <-
   airbnb_data_less_1000 |>
   filter(!is.na(host_is_superhost)) |>
@@ -159,23 +225,18 @@ airbnb_data_no_superhost_nas <-
 ```
 
 ```{r}
-airbnb_data_no_superhost_nas |>
-  ggplot(aes(x = review_scores_rating)) +
-  geom_bar() +
-  theme_classic() +
-  labs(
-    x = "Review scores rating",
-    y = "Number of properties"
-  )
-```
-
-```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_no_superhost_nas |>
   filter(is.na(review_scores_rating)) |>
   nrow()
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_no_superhost_nas |>
   filter(is.na(review_scores_rating)) |>
   select(number_of_reviews) |>
@@ -183,29 +244,26 @@ airbnb_data_no_superhost_nas |>
 ```
 
 ```{r}
-airbnb_data_no_superhost_nas |>
-  filter(!is.na(review_scores_rating)) |>
-  ggplot(aes(x = review_scores_rating)) +
-  geom_histogram(binwidth = 1) +
-  theme_classic() +
-  labs(
-    x = "Average review score",
-    y = "Number of properties"
-  )
-```
-
-```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_has_reviews <-
   airbnb_data_no_superhost_nas |>
   filter(!is.na(review_scores_rating))
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_has_reviews |>
   count(host_response_time)
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_has_reviews <-
   airbnb_data_has_reviews |>
   mutate(
@@ -219,6 +277,10 @@ airbnb_data_has_reviews <-
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| label: fig-review
+#| fig-cap: Distribution of review scores rating
 airbnb_data_has_reviews |>
   filter(is.na(host_response_time)) |>
   ggplot(aes(x = review_scores_rating)) +
@@ -231,6 +293,10 @@ airbnb_data_has_reviews |>
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| label: fig-missing
+#| fig-cap: Missing values in Paris Airbnb data, by host response time
 airbnb_data_has_reviews |>
   ggplot(aes(
     x = host_response_time,
@@ -246,12 +312,21 @@ airbnb_data_has_reviews |>
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 airbnb_data_selected <-
   airbnb_data_has_reviews |>
   filter(!is.na(host_response_time))
 ```
 
+We can also look at how many properties a host has on Airbnb in @fig-property . It can be observed that most hosts have 1 property. Majority of the hosts have less than 10 properties, which makes sense. Few of them have the number of properties around 100 - 1000, which sounds a bit strange, but might be the case if the host is in real estate business.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| label: fig-property
+#| fig-cap: Distribution of the number of properties a host has on Airbnb
 airbnb_data_selected |>
   ggplot(aes(x = host_total_listings_count)) +
   geom_histogram() +
@@ -262,23 +337,17 @@ airbnb_data_selected |>
   )
 ```
 
-```{r}
-airbnb_data_selected |>
-  filter(host_total_listings_count >= 500) |>
-  head()
-```
-
-```{r}
-airbnb_data_selected <-
-  airbnb_data_selected |>
-  add_count(host_id) |>
-  filter(n == 1) |>
-  select(-n)
-```
+\newpage
 
 ## Relationships between variables
 
+After looking at individual variables, the relationships between variables will be explored. First the relationship between price and reviews, and whether they are a super-host, for properties with more than 1 review will be analyzed. @fig-superhost shows the relationship between these variables. We can see that superhosts generally relate to 5-star ratings and in the price range of 250-500 per night. This makes sense because usually superhosts would receive high ratings as they would provide good housing and services. Also, if the price of the properties are very low, it is less likely that the property has a high standard, thus less likely the host will receive good rating and become a superhost. If the property price is very high, less people will choose to stay there, since airbnb is a more affordable choice for many people. If less people stay there, the host would receive less reviews in general, making it hard to become a superhost.
+
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+#| label: fig-superhost
+#| fig-cap: Distribution of the number of properties a host has on Airbnb
 airbnb_data_selected |>
   filter(number_of_reviews > 1) |>
   ggplot(aes(x = price, y = review_scores_rating, 
@@ -293,35 +362,12 @@ airbnb_data_selected |>
   scale_color_brewer(palette = "Set1")
 ```
 
-```{r}
-airbnb_data_selected |>
-  count(host_is_superhost) |>
-  mutate(
-    proportion = n / sum(n),
-    proportion = round(proportion, digits = 2)
-  )
-```
+A model is run on the dataset to get a better sense of relationships. Here, the model is used to predict whether someone a superhost or not, using variables: "host_response_time" and "review_scores_rating". The output is a binary variable, so we use logistic regression. We can see the model results using modelsummary(). It seems that each variable is positively correlated with the probability of being a superhost, since they all have positive numbers in model results.
 
 ```{r}
-airbnb_data_selected |>
-  tabyl(host_response_time, host_is_superhost) |>
-  adorn_percentages("col") |>
-  adorn_pct_formatting(digits = 0) |>
-  adorn_ns() |>
-  adorn_title()
-```
-
-```{r}
-airbnb_data_selected |>
-  tabyl(neighbourhood_cleansed) |>
-  adorn_pct_formatting() |>
-  arrange(-n) |>
-  filter(n > 100) |>
-  adorn_totals("row") |>
-  head()
-```
-
-```{r}
+#| message: FALSE
+#| echo: FALSE
+#| results: 'hide'
 logistic_reg_superhost_response_review <-
   glm(
     host_is_superhost ~
@@ -333,12 +379,19 @@ logistic_reg_superhost_response_review <-
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
 modelsummary(logistic_reg_superhost_response_review)
 ```
 
 ```{r}
+#| message: FALSE
+#| echo: FALSE
+# save analysis dataset
 write_parquet(
   x = airbnb_data_selected, 
   sink = "../data/2024-03-03-paris-airbnblistings-analysis_dataset.parquet"
   )
 ```
+
+## Reference
